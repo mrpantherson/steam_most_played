@@ -54,12 +54,15 @@ def Work(args):
     if args.do_viz:
         print('Generating viz')
         df = df.sort_values(by='minutes_played', ascending=False)
-        urls = df.loc[:args.n_games, 'logo_url']
+        urls = df['logo_url'].iloc[:args.n_games]
         output = Image.new('RGB', (args.out_width, args.out_height))
         for index, item in enumerate(urls):
             pic_req = requests.get(item)
-            im = Image.open(BytesIO(pic_req.content))
-            output.paste(im, ((index%args.n_cols)*args.width + 10,(index//args.n_cols)*args.height + 20))
+            if pic_req.status_code == 200:
+                im = Image.open(BytesIO(pic_req.content))
+                output.paste(im, ((index%args.n_cols)*args.width + 10,(index//args.n_cols)*args.height + 20))
+            else:
+                print(f'problem getting: {pic_req}')
         output.show()
         path = os.path.join(args.out_path, f'steam_top{args.n_games}_{args.user_id}.png')
         output.save(path)
