@@ -5,6 +5,8 @@ import pandas as pd
 from io import BytesIO
 from PIL import Image
 import sys
+import logging
+import time
 
 
 def Work(args):
@@ -24,7 +26,7 @@ def Work(args):
 
     # collect data from steam
     if args.new_data:
-        print('Downloading from steam api')
+        args.logger.info('Downloading from steam api')
         req = requests.get(api_url)
         if req.status_code == 200:
             data = req.json()
@@ -43,16 +45,17 @@ def Work(args):
             path = os.path.join(args.out_path, f'steam_owned_{args.user_id}.csv')
             df.to_csv(path)
         else:
+            args.logger.error('Could not grab data from steam api')
             sys.exit(1)
     # load previously grabbed data
     else:
-        print('Skipping steam api, loading from file')
+        args.logger.info('Skipping steam api, loading from file')
         path = os.path.join(args.out_path, f'steam_owned_{args.user_id}.csv')
         df = pd.read_csv(path)
 
     # generate viz
     if args.do_viz:
-        print('Generating viz')
+        args.logger.info('Generating viz')
         df = df.sort_values(by='minutes_played', ascending=False)
         urls = df['logo_url'].iloc[:args.n_games]
         output = Image.new('RGB', (args.out_width, args.out_height))
@@ -62,7 +65,8 @@ def Work(args):
                 im = Image.open(BytesIO(pic_req.content))
                 output.paste(im, ((index%args.n_cols)*args.width + 10,(index//args.n_cols)*args.height + 20))
             else:
-                print(f'problem getting: {pic_req}')
+                args.logger.warning(f'problem getting: {pic_req}')
+            time.sleep(args.nice_time)
         output.show()
         path = os.path.join(args.out_path, f'steam_top{args.n_games}_{args.user_id}.png')
         output.save(path)
@@ -88,8 +92,21 @@ if __name__ == '__main__':
     args.out_width = args.n_cols * args.width
     args.out_height = args.n_rows * args.height
     args.out_path = '../out/'
+    args.nice_time = 5
 
-    with open('log.txt', 'a') as f:
+    # logging base to include everything
+    args.logger = logging.getLogger(__name__)
+    args.logger.setLevel(logging.DEBUG)
+    # only warnings or higher to file
+    fh = logging.FileHandler(r'error.log')
+    fh.setLevel(logging.WARNING)
+    args.logger.addHandler(fh)
+    # info and higher to screen
+    sh = logging.StreamHandler()
+    sh.setLevel(logging.INFO)
+    args.logger.addHandler(sh)
+
+    with open('run.log', 'a') as f:
         arg_str = ' '.join(sys.argv)
         sep = '-' * 80
         out_str = f'{arg_str}\n{sep}\n'
