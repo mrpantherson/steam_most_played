@@ -11,7 +11,7 @@ def Work(args):
     """function grabs common steam user data and generates viz
     
     Arguments:
-        args  -- collection of command line arguments to control viz settings
+        args  -- collection of command line arguments to control settings
     """
     names = []
     minutes = []
@@ -67,7 +67,11 @@ def Work(args):
         path = os.path.join(args.out_path, f'steam_top{args.n_games}_{args.user_id}.png')
         output.save(path)
 
+
 if __name__ == '__main__':
+    """ script that uses steam api to collect public user info and store in a csv,
+        can also product visualizations based on this data
+    """
     parser = argparse.ArgumentParser(description='Collects top games from steam public user')
     parser.add_argument('api_key', help='Devs steam API key')
     parser.add_argument('user_id', help='Public steam users id')
@@ -84,5 +88,11 @@ if __name__ == '__main__':
     args.out_width = args.n_cols * args.width
     args.out_height = args.n_rows * args.height
     args.out_path = '../out/'
+
+    with open('log.txt', 'a') as f:
+        arg_str = ' '.join(sys.argv)
+        sep = '-' * 80
+        out_str = f'{arg_str}\n{sep}\n'
+        f.write(out_str)
 
     Work(args)
