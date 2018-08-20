@@ -7,6 +7,7 @@ from PIL import Image
 import sys
 import logging
 import time
+import matplotlib.pyplot as plt
 
 
 def Work(args):
@@ -67,9 +68,22 @@ def Work(args):
             else:
                 args.logger.warning(f'problem getting: {pic_req}')
             time.sleep(args.nice_time)
-        output.show()
         path = os.path.join(args.out_path, f'steam_top{args.n_games}_{args.user_id}.png')
         output.save(path)
+
+        if args.bars > 0:
+            args.logger.info('Generating bar chart')
+            df['hours_played'] = df['minutes_played'] / 60
+            plt.style.use('seaborn')
+            fig, ax = plt.subplots()
+            df = df.iloc[:args.bars]
+            # force barchart to go in reverse minute order
+            plt.barh(range(len(df), 0, -1), df['hours_played'])
+            plt.yticks(range(len(df), 0, -1), df['names'])
+            ax.set(title='Most Played Steam Games', xlabel='hours')
+            path = os.path.join(args.out_path, f'steam_bar{args.bars}_{args.user_id}.png')
+            plt.tight_layout()
+            plt.savefig(path)
 
 
 if __name__ == '__main__':
@@ -83,6 +97,7 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--cols', dest='n_cols', type=int, default=5, help='Number of cols')
     parser.add_argument('-w', '--width', dest='width', type=int, default=200, help='Width of individual pic')
     parser.add_argument('-t', '--tall', dest='height', type=int, default=100, help='Height of individual pic')
+    parser.add_argument('-b', '--bar', dest='bars', type=int, default=15, help='Number of bars to draw')
     parser.add_argument('-v', '--viz', dest='do_viz', action='store_false', help='Specify if you dont want a viz')
     parser.add_argument('-d', '--data', dest='new_data', action='store_false', help='Specify if the data exists already')
     args = parser.parse_args()
