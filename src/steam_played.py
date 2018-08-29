@@ -107,13 +107,15 @@ if __name__ == '__main__':
     args.out_width = args.n_cols * args.width
     args.out_height = args.n_rows * args.height
     args.out_path = '../out/'
+    args.log_path = '../log/'
     args.nice_time = 5
 
     # logging base to include everything
     args.logger = logging.getLogger(__name__)
     args.logger.setLevel(logging.DEBUG)
     # only warnings or higher to file
-    fh = logging.FileHandler(r'error.log')
+    path = os.path.join(args.log_path, 'error.log')
+    fh = logging.FileHandler(path)
     fh.setLevel(logging.WARNING)
     args.logger.addHandler(fh)
     # info and higher to screen
@@ -121,7 +123,8 @@ if __name__ == '__main__':
     sh.setLevel(logging.INFO)
     args.logger.addHandler(sh)
 
-    with open('run.log', 'a') as f:
+    path = os.path.join(args.log_path, 'run.log')
+    with open(path, 'a') as f:
         arg_str = ' '.join(sys.argv)
         sep = '-' * 80
         out_str = f'{arg_str}\n{sep}\n'
