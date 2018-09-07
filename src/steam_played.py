@@ -115,7 +115,7 @@ if __name__ == '__main__':
     args.logger.setLevel(logging.DEBUG)
     # only warnings or higher to file
     path = os.path.join(args.log_path, 'error.log')
-    fh = logging.FileHandler(path)
+    fh = logging.FileHandler(path, mode='w')
     fh.setLevel(logging.WARNING)
     args.logger.addHandler(fh)
     # info and higher to screen
