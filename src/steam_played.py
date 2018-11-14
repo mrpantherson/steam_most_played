@@ -8,6 +8,7 @@ import sys
 import logging
 import time
 import matplotlib.pyplot as plt
+import json
 
 
 def Work(args):
@@ -44,6 +45,7 @@ def Work(args):
                                     'logo_url':logo_url,
                                     'icon_url':icon_url}  )
             path = os.path.join(args.out_path, f'steam_owned_{args.user_id}.csv')
+            args.logger.info(f'Saving: {path}')
             df.to_csv(path)
         else:
             args.logger.error('Could not grab data from steam api')
@@ -56,7 +58,8 @@ def Work(args):
 
     # generate viz
     if args.do_viz:
-        args.logger.info('Generating viz')
+        path = os.path.join(args.out_path, f'steam_top{args.n_games}_{args.user_id}.png')
+        args.logger.info(f'Generating viz: {path}')
         df = df.sort_values(by='minutes_played', ascending=False)
         urls = df['logo_url'].iloc[:args.n_games]
         output = Image.new('RGB', (args.out_width, args.out_height))
@@ -68,11 +71,11 @@ def Work(args):
             else:
                 args.logger.warning(f'problem getting: {pic_req}')
             time.sleep(args.nice_time)
-        path = os.path.join(args.out_path, f'steam_top{args.n_games}_{args.user_id}.png')
         output.save(path)
 
         if args.bars > 0:
-            args.logger.info('Generating bar chart')
+            path = os.path.join(args.out_path, f'steam_bar{args.bars}_{args.user_id}.png')
+            args.logger.info(f'Generating bar chart: {path}')
             df['hours_played'] = df['minutes_played'] / 60
             plt.style.use('seaborn')
             fig, ax = plt.subplots()
@@ -81,7 +84,6 @@ def Work(args):
             plt.barh(range(len(df), 0, -1), df['hours_played'])
             plt.yticks(range(len(df), 0, -1), df['names'])
             ax.set(title='Most Played Steam Games', xlabel='hours')
-            path = os.path.join(args.out_path, f'steam_bar{args.bars}_{args.user_id}.png')
             plt.tight_layout()
             plt.savefig(path)
 
@@ -103,31 +105,32 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # add extra useful stuff
+    args.cfgpath = "../config.json"
+    with open(args.cfgpath, 'r') as file:
+        args.config = json.load(file)
+    args.out_path = args.config['out_path']
+    args.log_path = args.config['log_path']
+    args.nice_time = args.config['nice_time']
     args.n_games = args.n_rows * args.n_cols
     args.out_width = args.n_cols * args.width
     args.out_height = args.n_rows * args.height
-    args.out_path = '../out/'
-    args.log_path = '../log/'
-    args.nice_time = 5
 
     # logging base to include everything
     args.logger = logging.getLogger(__name__)
     args.logger.setLevel(logging.DEBUG)
-    # only warnings or higher to file
-    path = os.path.join(args.log_path, 'error.log')
-    fh = logging.FileHandler(path, mode='w')
-    fh.setLevel(logging.WARNING)
+    # file handler
+    path = os.path.join(args.log_path, 'log.txt')
+    fh = logging.FileHandler(path, mode='a')
+    fh.setLevel(logging.INFO)
     args.logger.addHandler(fh)
-    # info and higher to screen
+    # console handler
     sh = logging.StreamHandler()
     sh.setLevel(logging.INFO)
     args.logger.addHandler(sh)
 
-    path = os.path.join(args.log_path, 'run.log')
-    with open(path, 'a') as f:
-        arg_str = ' '.join(sys.argv)
-        sep = '-' * 80
-        out_str = f'{arg_str}\n{sep}\n'
-        f.write(out_str)
+    # log run commands 
+    sep = '-' * 80
+    arg_str = ' '.join(sys.argv)
+    args.logger.info(f'{sep}\npython {arg_str}\n')
 
     Work(args)

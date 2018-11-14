@@ -105,3 +105,6 @@ venv.bak/
 
 # logging 
 *.log
+
+# vscode settings
+.vscode/
